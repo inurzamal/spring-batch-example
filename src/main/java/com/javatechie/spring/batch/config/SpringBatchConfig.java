@@ -25,6 +25,8 @@ import org.springframework.core.task.TaskExecutor;
 @AllArgsConstructor
 public class SpringBatchConfig {
 
+    public static final String JOB_NAME = "importCustomers";
+    public static final String STEP_NAME = "csv-step";
     private JobBuilderFactory jobBuilderFactory;
 
     private StepBuilderFactory stepBuilderFactory;
@@ -74,7 +76,7 @@ public class SpringBatchConfig {
 
     @Bean
     public Step step1() {
-        return stepBuilderFactory.get("csv-step").<Customer, Customer>chunk(10)
+        return stepBuilderFactory.get(STEP_NAME).<Customer, Customer>chunk(10)
                 .reader(reader())
                 .processor(processor())
                 .writer(writer())
@@ -83,8 +85,8 @@ public class SpringBatchConfig {
     }
 
     @Bean
-    public Job runJob() {
-        return jobBuilderFactory.get("importCustomers")
+    public Job myJob() {
+        return jobBuilderFactory.get(JOB_NAME)
                 .flow(step1()).end().build();
 
     }
