@@ -27,6 +27,7 @@ public class SpringBatchConfig {
 
     public static final String JOB_NAME = "importCustomers";
     public static final String STEP_NAME = "csv-step";
+    public static final String FILE_TO_READ_FROM = "src/main/resources/customers.csv";
     private JobBuilderFactory jobBuilderFactory;
 
     private StepBuilderFactory stepBuilderFactory;
@@ -37,7 +38,7 @@ public class SpringBatchConfig {
     @Bean
     public FlatFileItemReader<Customer> reader() {
         FlatFileItemReader<Customer> itemReader = new FlatFileItemReader<>();
-        itemReader.setResource(new FileSystemResource("src/main/resources/customers.csv"));
+        itemReader.setResource(new FileSystemResource(FILE_TO_READ_FROM));
         itemReader.setName("csvReader");
         itemReader.setLinesToSkip(1);
         itemReader.setLineMapper(lineMapper());
