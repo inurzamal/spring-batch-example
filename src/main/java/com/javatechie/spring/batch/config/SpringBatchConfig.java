@@ -28,53 +28,48 @@ public class SpringBatchConfig {
     public static final String JOB_NAME = "importCustomers";
     public static final String STEP_NAME = "csv-step";
     public static final String FILE_TO_READ_FROM = "src/main/resources/customers.csv";
+
     private JobBuilderFactory jobBuilderFactory;
-
     private StepBuilderFactory stepBuilderFactory;
-
     private CustomerRepository customerRepository;
 
 
+    /**
+     * itemReader i.e. FlatFileItemReader to read csv file
+     */
     @Bean
     public FlatFileItemReader<Customer> reader() {
         FlatFileItemReader<Customer> itemReader = new FlatFileItemReader<>();
         itemReader.setResource(new FileSystemResource(FILE_TO_READ_FROM));
-        itemReader.setName("csvReader");
+        itemReader.setName("csvReader"); // any name
         itemReader.setLinesToSkip(1);
         itemReader.setLineMapper(lineMapper());
         return itemReader;
     }
 
-    private LineMapper<Customer> lineMapper() {
-        DefaultLineMapper<Customer> lineMapper = new DefaultLineMapper<>();
-
-        DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
-        lineTokenizer.setDelimiter(",");
-        lineTokenizer.setStrict(false);
-        lineTokenizer.setNames("id", "firstName", "lastName", "email", "gender", "contactNo", "country", "dob");
-
-        BeanWrapperFieldSetMapper<Customer> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
-        fieldSetMapper.setTargetType(Customer.class);
-
-        lineMapper.setLineTokenizer(lineTokenizer);
-        lineMapper.setFieldSetMapper(fieldSetMapper);
-        return lineMapper;
-
-    }
-
+    /**
+     * processor
+     */
     @Bean
     public CustomerProcessor processor() {
         return new CustomerProcessor();
     }
 
+    /**
+     * itemWriter i.e. RepositoryItemWriter to write into database
+     */
+
     @Bean
     public RepositoryItemWriter<Customer> writer() {
-        RepositoryItemWriter<Customer> writer = new RepositoryItemWriter<>();
-        writer.setRepository(customerRepository);
-        writer.setMethodName("save");
-        return writer;
+        RepositoryItemWriter<Customer> itemWriter = new RepositoryItemWriter<>();
+        itemWriter.setRepository(customerRepository);
+        itemWriter.setMethodName("save");
+        return itemWriter;
     }
 
+    /**
+     * providing reader, processor & writer to steps also taskExecutor
+     */
     @Bean
     public Step step1() {
         return stepBuilderFactory.get(STEP_NAME).<Customer, Customer>chunk(10)
@@ -85,18 +80,46 @@ public class SpringBatchConfig {
                 .build();
     }
 
+    /**
+     * providing steps into Job, & this job need to pass in JobLauncher using Controller
+     */
     @Bean
     public Job myJob() {
         return jobBuilderFactory.get(JOB_NAME)
                 .flow(step1()).end().build();
-
     }
 
+    /**
+     * TaskExecutor, to process multiple records asynchronously
+     * using SimpleAsyncTaskExecutor and setConcurrencyLimit(10),
+     * i.e. 10 threads will work concurrently
+     */
     @Bean
     public TaskExecutor taskExecutor() {
         SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
         asyncTaskExecutor.setConcurrencyLimit(10);
         return asyncTaskExecutor;
+    }
+
+    /**
+     * Configures a DefaultLineMapper for mapping lines from the CSV file to Customer objects.
+     * lineTokenizer will extract value from csv
+     * fieldSetMapper will map to target class i.e. Customer
+     */
+    private LineMapper<Customer> lineMapper() {
+        DefaultLineMapper<Customer> lineMapper = new DefaultLineMapper<>();
+
+        DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
+        lineTokenizer.setDelimiter(",");
+        lineTokenizer.setStrict(false);
+        lineTokenizer.setNames("id", "firstName", "lastName", "email", "gender", "contactNo", "country", "dob");
+
+        BeanWrapperFieldSetMapper<Customer> fieldSetMapper = new BeanWrapperFieldSetMapper<>(); //
+        fieldSetMapper.setTargetType(Customer.class);
+
+        lineMapper.setLineTokenizer(lineTokenizer);
+        lineMapper.setFieldSetMapper(fieldSetMapper);
+        return lineMapper;
     }
 
 }

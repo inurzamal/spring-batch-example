@@ -6,11 +6,10 @@ import org.springframework.batch.item.ItemProcessor;
 public class CustomerProcessor implements ItemProcessor<Customer,Customer> {
 
     @Override
-    public Customer process(Customer customer) throws Exception {
+    public Customer process(Customer customer) {
         if(customer.getCountry().equals("United States")) {
             return customer;
-        }else{
-            return null;
         }
+        return null;
     }
 }
