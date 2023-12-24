@@ -34,5 +34,4 @@ public class Customer {
     @Column(name = "DOB")
     private String dob;
 
-
 }
