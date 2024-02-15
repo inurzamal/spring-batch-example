@@ -1,0 +1,50 @@
+@Configuration
+@EnableBatchProcessing
+public class MyBatchConfig {
+
+    @Autowired
+    private JobBuilderFactory jobBuilderFactory;
+
+    @Autowired
+    private StepBuilderFactory stepBuilderFactory;
+
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
+
+    @Autowired
+    private EscrowAnalysisRepository escrowAnalysisRepository;
+
+    @Bean
+    public JpaPagingItemReader<EscrowAnalysis> jpaPagingItemReader() {
+        // Configure your JpaPagingItemReader here
+    }
+
+    @Bean
+    public ItemProcessor<EscrowAnalysis, EscrowAnalysis> myItemProcessor() {
+        // Implement your ItemProcessor logic here
+    }
+
+    @Bean
+    public JpaItemWriter<EscrowAnalysis> jpaItemWriter() {
+        JpaItemWriter<EscrowAnalysis> writer = new JpaItemWriter<>();
+        writer.setEntityManagerFactory(entityManagerFactory);
+        return writer;
+    }
+
+    @Bean
+    public Step myStep() {
+        return stepBuilderFactory.get("myStep")
+                .<EscrowAnalysis, EscrowAnalysis>chunk(10)
+                .reader(jpaPagingItemReader())
+                .processor(myItemProcessor())
+                .writer(jpaItemWriter())
+                .build();
+    }
+
+    @Bean
+    public Job myJob() {
+        return jobBuilderFactory.get("myJob")
+                .start(myStep())
+                .build();
+    }
+}
