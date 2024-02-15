@@ -1,0 +1,85 @@
+@Configuration
+@EnableBatchProcessing
+public class CreateIndividualFinalAnalysisJobConfig {
+
+    @Autowired
+    private JobBuilderFactory jobBuilderFactory;
+
+    @Autowired
+    private StepBuilderFactory stepBuilderFactory;
+
+    @Autowired
+    private EscrowAnalysisRepository escrowAnalysisRepository;
+
+    @Autowired
+    private NoEodProcShedRepository noEodProcShedRepository;
+
+    @Autowired
+    private CreateIndividualFinalAnalysisTasklet createIndividualFinalAnalysisTasklet;
+
+    @Bean
+    public Step fetchDataStep() {
+        return stepBuilderFactory.get("fetchDataStep")
+                .<NoEoDProcShed, EscrowAnalysis>chunk(10)
+                .reader(jpaItemReader())
+                .processor(itemProcessor())
+                .writer(jpaItemWriter())
+                .build();
+    }
+
+    @Bean
+    public Job createIndividualFinalAnalysisJob() {
+        return jobBuilderFactory.get("createIndividualFinalAnalysisJob")
+                .start(fetchDataStep())
+                .build();
+    }
+
+    @Bean
+    public JpaPagingItemReader<NoEoDProcShed> jpaItemReader() {
+        JpaPagingItemReader<NoEoDProcShed> reader = new JpaPagingItemReader<>();
+        reader.setEntityManagerFactory(entityManagerFactory); // Inject the EntityManagerFactory
+        reader.setQueryString("SELECT n FROM NoEoDProcShed n WHERE n.runSatDate = CURRENT_DATE");
+        reader.setPageSize(10);
+        return reader;
+    }
+
+    @Bean
+    public ItemProcessor<NoEoDProcShed, EscrowAnalysis> itemProcessor() {
+        return new ItemProcessor<NoEoDProcShed, EscrowAnalysis>() {
+            @Override
+            public EscrowAnalysis process(NoEoDProcShed item) throws Exception {
+                // Implement your processing logic here
+                // Map NoEoDProcShed to EscrowAnalysis and return
+                return mapToEscrowAnalysis(item);
+            }
+        };
+    }
+
+    @Bean
+    public JpaItemWriter<EscrowAnalysis> jpaItemWriter() {
+        JpaItemWriter<EscrowAnalysis> writer = new JpaItemWriter<>();
+        writer.setEntityManagerFactory(entityManagerFactory); // Inject the EntityManagerFactory
+        return writer;
+    }
+
+    private EscrowAnalysis mapToEscrowAnalysis(NoEoDProcShed noEoDProcShed) {
+        // Implement the mapping logic from NoEoDProcShed to EscrowAnalysis
+        // Return the mapped EscrowAnalysis instance
+    }
+}
+
+// ------------------------------------------------------------------------------------
+
+
+public class CreateIndividualFinalAnalysisTasklet implements Tasklet {
+
+    @Autowired
+    private EscrowAnalysisRepository escrowAnalysisRepository;
+
+    @Override
+    public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+        // Your additional processing logic if needed
+        return RepeatStatus.FINISHED;
+    }
+}
+
